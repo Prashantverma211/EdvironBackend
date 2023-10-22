@@ -5,7 +5,58 @@ const Section = require("../models/section");
 const Invoices = require("../models/invoices");
 const School = require("../models/school");
 const SchoolAdmin = require("../models/schoolAdmin");
+const Dues = require("../models/dues");
+const Payment = require("../models/payment");
 const mongoose = require("mongoose");
+
+const findDefaulter = async (schoolId) => {
+  let defaulter = 0;
+  const studentArr = await Student.find({ school_id: schoolId });
+
+  for (const std of studentArr) {
+    const duesArr = await Dues.find({ student: std._id }).countDocuments();
+    const paymentArr = await Payment.find({
+      student: std._id,
+    }).countDocuments();
+    if (duesArr > paymentArr) {
+      defaulter += 1;
+    }
+
+    // for (const dues of duesArr) {
+    //   const isDuesPresent = await Invoices.find({
+    //     dues: dues._id,
+    //   }).countDocuments();
+    //   // console.log(isDuesPresent);
+
+    //   if (!isDuesPresent) {
+    //     defaulter += 1;
+    //     break; // Exit the loop if no document is found
+    //   }
+    // }
+  }
+
+  return defaulter;
+};
+
+function numberFormat(num, type) {
+  const formatter = new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+    notation: "compact",
+    compactDisplay: "long",
+  });
+  return formatter.format(num);
+}
+const formattedNumber = (number) => {
+  return number.toLocaleString("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
 
 exports.getSchoolInfo = async (req, res, next) => {
   const error = validationResult(req);
@@ -46,9 +97,9 @@ exports.getSchoolInfo = async (req, res, next) => {
   });
 
   tmp.map((item) => {
-    totalCollection += item.amount;
+    totalCollection += item.amount || 0;
   });
-
+  totalCollection = numberFormat(totalCollection);
   tmp = await Transaction.find({
     school: schoolId,
     status: "SUCCESS",
@@ -57,8 +108,8 @@ exports.getSchoolInfo = async (req, res, next) => {
       $lt: endOfMonth,
     },
   });
-  tmp.map((item) => (collThisMonth += item.amount));
-
+  tmp.map((item) => (collThisMonth += item.amount || 0));
+  collThisMonth = numberFormat(collThisMonth);
   totalSection = await Section.find({
     school_id: schoolId,
     class: className,
@@ -68,7 +119,7 @@ exports.getSchoolInfo = async (req, res, next) => {
   tmp.map((item) => {
     fineCollTillDate += item.fine_amount || 0;
   });
-
+  fineCollTillDate = numberFormat(fineCollTillDate);
   const balance = await School.findById(schoolId);
   const cheque = await Transaction.find({
     school: schoolId,
@@ -91,7 +142,7 @@ exports.getSchoolInfo = async (req, res, next) => {
   schoolAdminsTmp.map((item) => {
     console.log(item);
     schoolAdmins.push({
-      name: item.name,
+      name: item?.name || "",
       access:
         item.access === "super"
           ? "Super Admin"
@@ -100,6 +151,24 @@ exports.getSchoolInfo = async (req, res, next) => {
           : "Management Staff",
     });
   });
+  const disbursalTmp = await Transaction.find({ school: schoolId })
+    .sort({ updateAt: -1 })
+    .limit(5);
+  const disbursal = [];
+  disbursalTmp.map((item) => {
+    console.log(item);
+    disbursal.push({
+      date: new Intl.DateTimeFormat("en-US", {
+        month: "long",
+        day: "2-digit",
+        year: "numeric",
+      }).format(item.updatedAt),
+      amount: formattedNumber(item.amount),
+      status: item.status === "SUCCESS" ? "Successful" : "Pending",
+    });
+  });
+
+  const defaulter = await findDefaulter(schoolId);
 
   res.status(200).json({
     collThisMonth,
@@ -107,9 +176,11 @@ exports.getSchoolInfo = async (req, res, next) => {
     totalSection,
     fineCollTillDate,
     totalStudent,
-    balance: balance.balance,
+    balance: numberFormat(balance?.balance || 0),
     paymentMode: { online, cheque, cash },
     schoolAdmins,
+    disbursal,
+    defaulter,
   });
   console.log(totalStudent);
 };
