@@ -9,34 +9,6 @@ const Dues = require("../models/dues");
 const Payment = require("../models/payment");
 const mongoose = require("mongoose");
 
-const findDefaulter = async (schoolId) => {
-  let defaulter = 0;
-  const studentArr = await Student.find({ school_id: schoolId });
-
-  for (const std of studentArr) {
-    const duesArr = await Dues.find({ student: std._id }).countDocuments();
-    const paymentArr = await Payment.find({
-      student: std._id,
-    }).countDocuments();
-    if (duesArr > paymentArr) {
-      defaulter += 1;
-    }
-
-    // for (const dues of duesArr) {
-    //   const isDuesPresent = await Invoices.find({
-    //     dues: dues._id,
-    //   }).countDocuments();
-    //   // console.log(isDuesPresent);
-
-    //   if (!isDuesPresent) {
-    //     defaulter += 1;
-    //     break; // Exit the loop if no document is found
-    //   }
-    // }
-  }
-
-  return defaulter;
-};
 
 function numberFormat(num, type) {
   const formatter = new Intl.NumberFormat("en-IN", {
@@ -58,7 +30,7 @@ const formattedNumber = (number) => {
   });
 };
 
-exports.getSchoolInfo = async (req, res, next) => {
+exports.getAllSchoolInfo = async (req, res, next) => {
   const error = validationResult(req);
   if (!error.isEmpty()) {
     const errors = new Error();
@@ -75,7 +47,7 @@ exports.getSchoolInfo = async (req, res, next) => {
   let totalCollection = 0;
   let collThisMonth = 0;
   let fineCollTillDate = 0;
-  let defaulters = 0;
+  
 
   const currentDate = new Date();
   const startOfMonth = new Date(
@@ -168,7 +140,7 @@ exports.getSchoolInfo = async (req, res, next) => {
     });
   });
 
-  const defaulter = await findDefaulter(schoolId);
+
 
   res.status(200).json({
     collThisMonth,
@@ -180,7 +152,7 @@ exports.getSchoolInfo = async (req, res, next) => {
     paymentMode: { online, cheque, cash },
     schoolAdmins,
     disbursal,
-    defaulter,
+    
   });
   console.log(totalStudent);
 };
