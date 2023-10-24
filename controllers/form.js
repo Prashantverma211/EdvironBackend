@@ -9,7 +9,6 @@ const Dues = require("../models/dues");
 const Payment = require("../models/payment");
 const mongoose = require("mongoose");
 
-
 function numberFormat(num, type) {
   const formatter = new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -47,7 +46,6 @@ exports.getAllSchoolInfo = async (req, res, next) => {
   let totalCollection = 0;
   let collThisMonth = 0;
   let fineCollTillDate = 0;
-  
 
   const currentDate = new Date();
   const startOfMonth = new Date(
@@ -63,6 +61,12 @@ exports.getAllSchoolInfo = async (req, res, next) => {
   console.log(startOfMonth, endOfMonth);
   totalStudent = await Student.find({ school_id: schoolId }).countDocuments();
 
+  totalStudent = totalStudent.toLocaleString("en-IN", {
+    // style: "currency",
+    // currency: "INR",
+    // minimumFractionDigits: 2,
+    maximumFractionDigits: 0,
+  });
   let tmp = await Transaction.find({
     school: schoolId,
     status: "SUCCESS",
@@ -140,8 +144,6 @@ exports.getAllSchoolInfo = async (req, res, next) => {
     });
   });
 
-
-
   res.status(200).json({
     collThisMonth,
     totalCollection,
@@ -152,7 +154,6 @@ exports.getAllSchoolInfo = async (req, res, next) => {
     paymentMode: { online, cheque, cash },
     schoolAdmins,
     disbursal,
-    
   });
   console.log(totalStudent);
 };
