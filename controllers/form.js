@@ -58,7 +58,7 @@ exports.getAllSchoolInfo = async (req, res, next) => {
     currentDate.getMonth() + 1,
     1
   );
-  console.log(startOfMonth, endOfMonth);
+
   totalStudent = await Student.find({ school_id: schoolId }).countDocuments();
 
   totalStudent = totalStudent.toLocaleString("en-IN", {
@@ -67,6 +67,7 @@ exports.getAllSchoolInfo = async (req, res, next) => {
     // minimumFractionDigits: 2,
     maximumFractionDigits: 0,
   });
+
   let tmp = await Transaction.find({
     school: schoolId,
     status: "SUCCESS",
@@ -116,7 +117,6 @@ exports.getAllSchoolInfo = async (req, res, next) => {
   const schoolAdminsTmp = await SchoolAdmin.find({ school_id: schoolId });
   const schoolAdmins = [];
   schoolAdminsTmp.map((item) => {
-    console.log(item);
     schoolAdmins.push({
       name: item?.name || "",
       access:
@@ -132,7 +132,6 @@ exports.getAllSchoolInfo = async (req, res, next) => {
     .limit(5);
   const disbursal = [];
   disbursalTmp.map((item) => {
-    console.log(item);
     disbursal.push({
       date: new Intl.DateTimeFormat("en-US", {
         month: "long",
@@ -155,5 +154,4 @@ exports.getAllSchoolInfo = async (req, res, next) => {
     schoolAdmins,
     disbursal,
   });
-  console.log(totalStudent);
 };

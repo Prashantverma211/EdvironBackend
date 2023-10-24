@@ -40,36 +40,57 @@ const fundDefaulter2 = async (schoolId) => {
   }
 };
 const findDefaulter = async (schoolId) => {
-  let defaulter = 0;
-  const studentArr = await Student.find({ school_id: schoolId });
+  // Find students in the school and get their IDs
+  const studentIds = await Student.find({ school_id: schoolId }).distinct(
+    "_id"
+  );
 
-  for (const std of studentArr) {
-    const duesArr = await Dues.find({
-      student: std._id,
-      due_date: { $lt: new Date() },
-    }).countDocuments();
-    const paymentArr = await Payment.find({
-      student: std._id,
-    }).countDocuments();
-    if (duesArr > paymentArr) {
+  // Find the count of dues and payments using aggregation
+  const result = await Dues.aggregate([
+    {
+      $match: {
+        student: { $in: studentIds },
+        due_date: { $lt: new Date() },
+      },
+    },
+    {
+      $group: {
+        _id: "$student",
+        duesCount: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const payments = await Payment.aggregate([
+    {
+      $match: {
+        student: { $in: studentIds },
+      },
+    },
+    {
+      $group: {
+        _id: "$student",
+        paymentsCount: { $sum: 1 },
+      },
+    },
+  ]);
+
+  // Calculate the number of defaulters
+  let defaulter = 0;
+
+  for (const resultItem of result) {
+    const studentId = resultItem._id;
+    const duesCount = resultItem.duesCount;
+    const paymentsCount = payments.find((p) => p._id.equals(studentId));
+
+    if (!paymentsCount || duesCount > paymentsCount.paymentsCount) {
       defaulter += 1;
     }
-
-    // for (const dues of duesArr) {
-    //   const isDuesPresent = await Invoices.find({
-    //     dues: dues._id,
-    //   }).countDocuments();
-    //   // console.log(isDuesPresent);
-
-    //   if (!isDuesPresent) {
-    //     defaulter += 1;
-    //     break; // Exit the loop if no document is found
-    //   }
-    // }
   }
 
   return defaulter;
 };
+
 exports.getDefaulters = async (req, res, next) => {
   try {
     const error = validationResult(req);
