@@ -7,7 +7,6 @@ const School = require("../models/school");
 const SchoolAdmin = require("../models/schoolAdmin");
 const Dues = require("../models/dues");
 const Payment = require("../models/payment");
-const mongoose = require("mongoose");
 
 function numberFormat(num, type) {
   const formatter = new Intl.NumberFormat("en-IN", {

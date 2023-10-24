@@ -7,16 +7,12 @@ const School = require("../models/school");
 const SchoolAdmin = require("../models/schoolAdmin");
 const Dues = require("../models/dues");
 const Payment = require("../models/payment");
-const mongoose = require("mongoose");
 
 function hasTimePassed(givenTimestamp) {
-  // Convert the given timestamp to a Date object
   const givenDate = new Date(givenTimestamp);
 
-  // Get the current timestamp
   const currentDate = new Date();
 
-  // Compare the two timestamps
   return currentDate > givenDate;
 }
 
@@ -40,12 +36,10 @@ const fundDefaulter2 = async (schoolId) => {
   }
 };
 const findDefaulter = async (schoolId) => {
-  // Find students in the school and get their IDs
   const studentIds = await Student.find({ school_id: schoolId }).distinct(
     "_id"
   );
 
-  // Find the count of dues and payments using aggregation
   const result = await Dues.aggregate([
     {
       $match: {
@@ -75,7 +69,6 @@ const findDefaulter = async (schoolId) => {
     },
   ]);
 
-  // Calculate the number of defaulters
   let defaulter = 0;
 
   for (const resultItem of result) {
