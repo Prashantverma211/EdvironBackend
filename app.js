@@ -37,7 +37,7 @@ app.use((error, req, res, next) => {
   const code = error.code || 500;
   const message = error.message || "An error occurred";
   const data = error.data || [];
-  // console.log(code, message, data);
+
   res.status(code).json({ message: message, error: data });
 });
 
