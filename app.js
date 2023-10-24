@@ -42,9 +42,7 @@ app.use((error, req, res, next) => {
 });
 
 mongoose
-  .connect(
-    "mongodb+srv://Akash:Y2F0DTamMRUoUX2l@cluster0.tq8kb.mongodb.net/testing"
-  )
+  .connect("mongodb+srv://assignment:edviron@cluster1.focovdw.mongodb.net/test")
   .then((result) => {
     app.listen(8080);
   })
