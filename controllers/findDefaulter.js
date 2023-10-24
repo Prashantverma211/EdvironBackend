@@ -9,12 +9,45 @@ const Dues = require("../models/dues");
 const Payment = require("../models/payment");
 const mongoose = require("mongoose");
 
+function hasTimePassed(givenTimestamp) {
+  // Convert the given timestamp to a Date object
+  const givenDate = new Date(givenTimestamp);
+
+  // Get the current timestamp
+  const currentDate = new Date();
+
+  // Compare the two timestamps
+  return currentDate > givenDate;
+}
+
+const fundDefaulter2 = async (schoolId) => {
+  let defaulter = 0;
+  const totalStudentInSchoolIdsArr = (
+    await Student.find({ school_id: schoolId })
+  ).map((itr) => itr._id);
+  for (const std of totalStudentInSchoolIdsArr) {
+    const dueArr = await Dues.find({
+      student: std,
+      due_date: { $lt: new Date() },
+    }).countDocuments();
+    const paymentArr = await Payment.find({
+      student: std._id,
+    }).countDocuments();
+    if (dueArr > paymentArr) {
+      defaulter += 1;
+    }
+    return defaulter;
+  }
+};
 const findDefaulter = async (schoolId) => {
   let defaulter = 0;
   const studentArr = await Student.find({ school_id: schoolId });
 
   for (const std of studentArr) {
-    const duesArr = await Dues.find({ student: std._id }).countDocuments();
+    const duesArr = await Dues.find({
+      student: std._id,
+      due_date: { $lt: new Date() },
+    }).countDocuments();
     const paymentArr = await Payment.find({
       student: std._id,
     }).countDocuments();
